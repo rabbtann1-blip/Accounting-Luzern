@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учет материалов и времени на объекте</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-link-color: #0088cc;
+            --tg-theme-button-color: #0088cc;
+            --tg-theme-button-text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--tg-theme-link-color);
+            padding-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--tg-theme-hint-color);
+            font-size: 14px;
+        }
+
+        .user-info {
+            background-color: #f0f0f0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .user-info strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 16px;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: var(--tg-theme-text-color);
+        }
+
+        .btn-secondary:active {
+            background-color: #d0d0d0;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+            flex: none;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--tg-theme-link-color);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .input, .select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .input:focus, .select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--tg-theme-link-color);
+            box-shadow: 0 0 0 2px rgba(0, 136, 204, 0.1);
+        }
+
+        .list-item {
+            background-color: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--tg-theme-link-color);
+        }
+
+        .list-item-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item-desc {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color);
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+        }
+
+        .row-flex {
+            display: flex;
+            gap: 12px;
+        }
+
+        .row-flex > * {
+            flex: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--tg-theme-hint-color);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-box {
+            margin-bottom: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background-color: #f0f0f0;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--tg-theme-button-color);
+        }
+
+        .stat-card-label {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color);
+            margin-top: 4px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--tg-theme-bg-color);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--tg-theme-hint-color);
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--tg-theme-hint-color);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Информация о пользователе -->
+        <div class="header">
+            <h1>📊 Учет материалов</h1>
+            <p>на объекте строительства</p>
+        </div>
+
+        <div id="userInfo" class="user-info hidden">
+            <strong>Мастер участка:</strong>
+            <span id="userName">-</span>
+            <small id="userPhone"></small>
+        </div>
+
+        <!-- Авторизация -->
+        <div id="authSection">
+            <div class="section">
+                <div class="section-title">🔐 Авторизация</div>
+                <div class="form-group">
+                    <label class="label">Выберите способ входа:</label>
+                    <div class="button-group">
+                        <button class="btn" onclick="authWithTelegram()">Telegram</button>
+                        <button class="btn btn-secondary" onclick="showPhoneAuth()">Телефон</button>
+                    </div>
+                </div>
+                <div id="phoneAuthForm" class="hidden">
+                    <div class="form-group">
+                        <label class="label">Номер телефона</label>
+                        <input type="tel" id="phoneInput" class="input" placeholder="+7 (XXX) XXX-XX-XX">
+                    </div>
+                    <div class="form-group">
+                        <label class="label">Имя мастера</label>
+                        <input type="text" id="masterNameInput" class="input" placeholder="Иван Петров">
+                    </div>
+                    <div class="button-group">
+                        <button class="btn" onclick="authWithPhone()">Войти</button>
+                        <button class="btn btn-secondary" onclick="hidePhoneAuth()">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основное приложение -->
+        <div id="mainApp" class="hidden">
+            <!-- Вкладки -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('objects')">Объекты</button>
+                <button class="tab-btn" onclick="switchTab('records')">Записи</button>
+                <button class="tab-btn" onclick="switchTab('stats')">Статистика</button>
+                <button class="tab-btn" onclick="switchTab('export')">Экспорт</button>
+            </div>
+
+            <!-- Вкладка: Объекты -->
+            <div id="objectsTab" class="tab-content active">
+                <div class="section">
+                    <div class="section-title">🏗️ Объекты</div>
+                    <div class="button-group">
+                        <button class="btn" onclick="showNewObjectModal()">+ Новый объект</button>
+                        <button class="btn btn-secondary" onclick="toggleObjectList()">Список</button>
+                    </div>
+                </div>
+
+                <div id="objectsList" class="section">
+                    <div id="objectsContainer"></div>
+                </div>
+
+                <div id="selectedObjectInfo" class="hidden">
+                    <div class="section">
+                        <div class="section-title">ℹ️ Информация об объекте</div>
+                        <div class="list-item">
+                            <strong id="selectedObjName">-</strong>
+                            <small id="selectedObjAddress">Адрес не указан</small>
+                            <button class="btn btn-secondary btn-small" onclick="deleteObject()" style="margin-top: 8px;">Удалить</button>
+                        </div>
+                    </div>
+
+                    <!-- Люди -->
+                    <div class="section">
+                        <div class="section-title">👥 Люди (количество)</div>
+                        <div class="form-group">
+                            <input type="number" id="peoplCount" class="input" placeholder="Количество рабочих" min="0">
+                            <button class="btn btn-secondary btn-small" onclick="addPeople()">Добавить</button>
+                        </div>
+                        <div id="peopleList"></div>
+                    </div>
+
+                    <!-- Механизмы -->
+                    <div class="section">
+                        <div class="section-title">⚙️ Механизмы</div>
+                        <div class="row-flex">
+                            <input type="text" id="mechanismName" class="input" placeholder="Наименование техники">
+                            <input type="number" id="mechanismHours" class="input" placeholder="Часы">
+                        </div>
+                        <button class="btn btn-secondary" onclick="addMechanism()" style="margin-top: 8px;">Добавить</button>
+                        <div id="mechanismList" style="margin-top: 12px;"></div>
+                    </div>
+
+                    <!-- Топливо -->
+                    <div class="section">
+                        <div class="section-title">⛽ Топливо</div>
+                        <div class="form-group">
+                            <input type="number" id="fuelQuantity" class="input" placeholder="Количество литров" min="0" step="0.1">
+                            <button class="btn btn-secondary" onclick="addFuel()">Добавить</button>
+                        </div>
+                        <div id="fuelList"></div>
+                    </div>
+
+                    <!-- Инертные материалы -->
+                    <div class="section">
+                        <div class="section-title">🪨 Инертные материалы</div>
+                        <div class="row-flex">
+                            <input type="text" id="materialType" class="input" placeholder="Вид материала">
+                            <select id="materialUnit" class="select">
+                                <option value="тонны">Тонны</option>
+                                <option value="кубы">Кубы</option>
+                            </select>
+                        </div>
+                        <div class="row-flex" style="margin-top: 8px;">
+                            <input type="number" id="materialQuantity" class="input" placeholder="Количество" min="0" step="0.1">
+                            <button class="btn btn-secondary" onclick="addMaterial()">Добавить</button>
+                        </div>
+                        <div id="materialList" style="margin-top: 12px;"></div>
+                    </div>
+
+                    <!-- Наемная техника -->
+                    <div class="section">
+                        <div class="section-title">🚚 Наемная техника</div>
+                        <div class="form-group">
+                            <input type="text" id="rentEquipType" class="input" placeholder="Вид техники">
+                        </div>
+                        <div class="row-flex">
+                            <input type="number" id="rentEquipHours" class="input" placeholder="Часы" min="0">
+                            <input type="text" id="rentEquipOrg" class="input" placeholder="Организация">
+                        </div>
+                        <button class="btn btn-secondary" onclick="addRentEquipment()" style="margin-top: 8px;">Добавить</button>
+                        <div id="rentEquipList" style="margin-top: 12px;"></div>
+                    </div>
+
+                    <!-- Машины -->
+                    <div class="section">
+                        <div class="section-title">🚗 Машины</div>
+                        <div class="row-flex">
+                            <input type="text" id="carPlate" class="input" placeholder="Гос. номер">
+                            <input type="number" id="carHours" class="input" placeholder="Часы" min="0">
+                        </div>
+                        <button class="btn btn-secondary" onclick="addCar()" style="margin-top: 8px;">Добавить</button>
+                        <div id="carList" style="margin-top: 12px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка: Записи -->
+            <div id="recordsTab" class="tab-content">
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="input" placeholder="🔍 Поиск по критериям...">
+                    <small style="display: block; margin-top: 4px; color: var(--tg-theme-hint-color);">
+                        Ищите по названию объекта, типу материала, технике...
+                    </small>
+                </div>
+
+                <div id="recordsContainer"></div>
+                <div id="noRecords" class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <div>Нет записей</div>
+                </div>
+            </div>
+
+            <!-- Вкладка: Статистика -->
+            <div id="statsTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">📈 Общая статистика</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-card-value" id="totalObjects">0</div>
+                            <div class="stat-card-label">Объектов</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-value" id="totalRecords">0</div>
+                            <div class="stat-card-label">Записей</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-value" id="totalPeople">0</div>
+                            <div class="stat-card-label">Человеко-дни</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-value" id="totalFuel">0</div>
+                            <div class="stat-card-label">Литров топлива</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🏗️ По объектам</div>
+                    <div id="statsContainer"></div>
+                </div>
+            </div>
+
+            <!-- Вкладка: Экспорт -->
+            <div id="exportTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">📥 Экспорт данных</div>
+                    <p style="font-size: 13px; color: var(--tg-theme-hint-color); margin-bottom: 12px;">
+                        Экспортируйте все данные в Excel файл для дальнейшей работы.
+                    </p>
+                    <button class="btn" onclick="exportToExcel()">📊 Экспортировать в Excel</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🗑️ Управление данными</div>
+                    <button class="btn btn-secondary" onclick="downloadJSON()">⬇️ Скачать резервную копию</button>
+                    <button class="btn btn-secondary" style="margin-top: 12px;" onclick="showClearDataModal()">🔄 Очистить все данные</button>
+                </div>
+
+                <div id="exportMessage"></div>
+            </div>
+
+            <!-- Выход -->
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
+                <button class="btn btn-secondary" onclick="logout()" style="width: 100%;">Выход</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Новый объект -->
+    <div id="newObjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Новый объект</span>
+                <button class="close-btn" onclick="closeModal('newObjectModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="label">Название объекта</label>
+                <input type="text" id="objectName" class="input" placeholder="например: Объект 'Новый парк'">
+            </div>
+            <div class="form-group">
+                <label class="label">Адрес объекта</label>
+                <input type="text" id="objectAddress" class="input" placeholder="Адрес строительства">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="createObject()">Создать</button>
+                <button class="btn btn-secondary" onclick="closeModal('newObjectModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Подтверждение очистки -->
+    <div id="clearDataModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>⚠️ Очистить все данные?</span>
+                <button class="close-btn" onclick="closeModal('clearDataModal')">&times;</button>
+            </div>
+            <p style="margin-bottom: 16px; font-size: 14px;">
+                Это действие удалит все данные приложения и не может быть отменено.
+            </p>
+            <div class="button-group">
+                <button class="btn" style="background-color: #ff6b6b;" onclick="clearAllData()">Удалить</button>
+                <button class="btn btn-secondary" onclick="closeModal('clearDataModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ ДАННЫЕ ============
+        let appData = {
+            user: null,
+            objects: [],
+            records: []
+        };
+
+        let currentObjectId = null;
+
+        // ============ ИНИЦИАЛИЗАЦИЯ ============
+        window.addEventListener('load', function() {
+            Telegram.WebApp.ready();
+            loadData();
+            initTelegram();
+        });
+
+        function initTelegram() {
+            const initData = Telegram.WebApp.initDataUnsafe;
+            if (initData && initData.user) {
+                const user = initData.user;
+                appData.user = {
+                    id: user.id,
+                    firstName: user.first_name,
+                    lastName: user.last_name || '',
+                    username: user.username || '',
+                    phone: user.phone_number || '',
+                    authType: 'telegram'
+                };
+                showApp();
+            }
+        }
+
+        // ============ АВТОРИЗАЦИЯ ============
+        function authWithTelegram() {
+            const initData = Telegram.WebApp.initDataUnsafe;
+            if (initData && initData.user) {
+                const user = initData.user;
+                appData.user = {
+                    id: user.id,
+                    firstName: user.first_name,
+                    lastName: user.last_name || '',
+                    username: user.username || '',
+                    phone: user.phone_number || '',
+                    authType: 'telegram'
+                };
+                saveData();
+                showApp();
+            } else {
+                alert('Не удалось получить данные Telegram');
+            }
+        }
+
+        function showPhoneAuth() {
+            document.getElementById('phoneAuthForm').classList.remove('hidden');
+        }
+
+        function hidePhoneAuth() {
+            document.getElementById('phoneAuthForm').classList.add('hidden');
+        }
+
+        function authWithPhone() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            const name = document.getElementById('masterNameInput').value.trim();
+
+            if (!phone || !name) {
+                alert('Заполните все поля');
+                return;
+            }
+
+            appData.user = {
+                id: 'phone_' + Date.now(),
+                firstName: name,
+                phone: phone,
+                authType: 'phone'
+            };
+
+            saveData();
+            showApp();
+        }
+
+        function showApp() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            updateUserInfo();
+            loadObjects();
+        }
+
+        function updateUserInfo() {
+            if (appData.user) {
+                const name = appData.user.firstName + (appData.user.lastName ? ' ' + appData.user.lastName : '');
+                document.getElementById('userName').textContent = name;
+                if (appData.user.phone) {
+                    document.getElementById('userPhone').textContent = appData.user.phone;
+                }
+            }
+        }
+
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                appData.user = null;
+                currentObjectId = null;
+                saveData();
+                location.reload();
+            }
+        }
+
+        // ============ ОБЪЕКТЫ ============
+        function showNewObjectModal() {
+            document.getElementById('objectName').value = '';
+            document.getElementById('objectAddress').value = '';
+            document.getElementById('newObjectModal').classList.add('active');
+        }
+
+        function createObject() {
+            const name = document.getElementById('objectName').value.trim();
+            const address = document.getElementById('objectAddress').value.trim();
+
+            if (!name) {
+                alert('Укажите название объекта');
+                return;
+            }
+
+            const object = {
+                id: Date.now().toString(),
+                name: name,
+                address: address,
+                createdAt: new Date().toISOString(),
+                data: {
+                    people: [],
+                    mechanisms: [],
+                    fuel: [],
+                    materials: [],
+                    rentEquipment: [],
+                    cars: []
+                }
+            };
+
+            appData.objects.push(object);
+            saveData();
+            closeModal('newObjectModal');
+            loadObjects();
+        }
+
+        function loadObjects() {
+            const container = document.getElementById('objectsContainer');
+            container.innerHTML = '';
+
+            if (appData.objects.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏗️</div><div>Нет объектов</div></div>';
+                return;
+            }
+
+            appData.objects.forEach(obj => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.onclick = () => selectObject(obj.id);
+                item.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${obj.name}</span>
+                        <button class="delete-btn" onclick="event.stopPropagation(); deleteObject('${obj.id}')">🗑️</button>
+                    </div>
+                    <div class="list-item-desc">
+                        📍 ${obj.address || 'Адрес не указан'}<br>
+                        📅 ${new Date(obj.createdAt).toLocaleDateString('ru-RU')}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function selectObject(objId) {
+            currentObjectId = objId;
+            const obj = appData.objects.find(o => o.id === objId);
+            if (obj) {
+                document.getElementById('selectedObjName').textContent = obj.name;
+                document.getElementById('selectedObjAddress').textContent = obj.address || 'Адрес не указан';
+                document.getElementById('selectedObjectInfo').classList.remove('hidden');
+                refreshObjectData();
+            }
+        }
+
+        function deleteObject(objId) {
+            objId = objId || currentObjectId;
+            if (!objId || !confirm('Удалить объект и все его данные?')) return;
+
+            appData.objects = appData.objects.filter(o => o.id !== objId);
+            appData.records = appData.records.filter(r => r.objectId !== objId);
+            saveData();
+
+            if (currentObjectId === objId) {
+                currentObjectId = null;
+                document.getElementById('selectedObjectInfo').classList.add('hidden');
+            }
+
+            loadObjects();
+        }
+
+        // ============ ЛЮДИ ============
+        function addPeople() {
+            const count = parseInt(document.getElementById('peoplCount').value) || 0;
+            if (count <= 0) {
+                alert('Укажите количество');
+                return;
+            }
+
+            if (currentObjectId) {
+                const obj = appData.objects.find(o => o.id === currentObjectId);
+                if (obj) {
+                    const entry = {
+                        id: Date.now().toString(),
+                        count: count,
+                        date: new Date().toLocaleString('ru-RU')
+                    };
+                    obj.data.people.push(entry);
+                    saveData();
+                    document.getElementById('peoplCount').value = '';
+                    refreshObjectData();
+                    showMessage('Люди добавлены');
+                }
+            }
+        }
+
+        // ============ МЕХАНИЗМЫ ============
+        function addMechanism() {
+            const name = document.getElementById('mechanismName').value.trim();
+            const hours = parseFloat(document.getElementById('mechanismHours').value) || 0;
+
+            if (!name) {
+                alert('Укажите наименование техники');
+                return;
+            }
+
+            if (currentObjectId) {
+                const obj = appData.objects.find(o => o.id === currentObjectId);
+                if (obj) {
+                    const entry = {
+                        id: Date.now().toString(),
+                        name: name,
+                        hours: hours,
+                        date: new Date().toLocaleString('ru-RU')
+                    };
+                    obj.data.mechanisms.push(entry);
+                    saveData();
+                    document.getElementById('mechanismName').value = '';
+                    document.getElementById('mechanismHours').value = '';
+                    refreshObjectData();
+                    showMessage('Механизм добавлен');
+                }
+            }
+        }
+
+        // ============ ТОПЛИВО ============
+        function addFuel() {
+            const quantity = parseFloat(document.getElementById('fuelQuantity').value) || 0;
+
+            if (quantity <= 0) {
+                alert('Укажите количество литров');
+                return;
+            }
+
+            if (currentObjectId) {
+                const obj = appData.objects.find(o => o.id === currentObjectId);
+                if (obj) {
+                    const entry = {
+                        id: Date.now().toString(),
+                        liters: quantity,
+                        date: new Date().toLocaleString('ru-RU')
+                    };
+                    obj.data.fuel.push(entry);
+                    saveData();
+                    document.getElementById('fuelQuantity').value = '';
+                    refreshObjectData();
+                    showMessage('Топливо добавлено');
+                }
+            }
+        }
+
+        // ============ ИНЕРТНЫЕ МАТЕРИАЛЫ ============
+        function addMaterial() {
+            const type = document.getElementById('materialType').value.trim();
+            const quantity = parseFloat(document.getElementById('materialQuantity').value) || 0;
+            const unit = document.getElementById('materialUnit').value;
+
+            if (!type || quantity <= 0) {
+                alert('Заполните все поля');
+                return;
+            }
+
+            if (currentObjectId) {
+                const obj = appData.objects.find(o => o.id === currentObjectId);
+                if (obj) {
+                    const entry = {
+                        id: Date.now().toString(),
+                        type: type,
+                        quantity: quantity,
+                        unit: unit,
+                        date: new Date().toLocaleString('ru-RU')
+                    };
+                    obj.data.materials.push(entry);
+                    saveData();
+                    document.getElementById('materialType').value = '';
+                    document.getElementById('materialQuantity').value = '';
+                    refreshObjectData();
+                    showMessage('Материал добавлен');
+                }
+            }
+        }
+
+        // ============ НАЕМНАЯ ТЕХНИКА ============
+        function addRentEquipment() {
+            const type = document.getElementById('rentEquipType').value.trim();
+            const hours = parseFloat(document.getElementById('rentEquipHours').value) || 0;
+            const org = document.getElementById('rentEquipOrg').value.trim();
+
+            if (!type || hours <= 0 || !org) {
+                alert('Заполните все поля');
+                return;
+            }
+
+            if (currentObjectId) {
+                const obj = appData.objects.find(o => o.id === currentObjectId);
+                if (obj) {
+                    const entry = {
+                        id: Date.now().toString(),
+                        type: type,
+                        hours: hours,
+                        organization: org,
+                        date: new Date().toLocaleString('ru-RU')
+                    };
+                    obj.data.rentEquipment.push(entry);
+                    saveData();
+                    document.getElementById('rentEquipType').value = '';
+                    document.getElementById('rentEquipHours').value = '';
+                    document.getElementById('rentEquipOrg').value = '';
+                    refreshObjectData();
+                    showMessage('Наемная техника добавлена');
+                }
+            }
+        }
+
+        // ============ МАШИНЫ ============
+        function addCar() {
+            const plate = document.getElementById('carPlate').value.trim();
+            const hours = parseFloat(document.getElementById('carHours').value) || 0;
+
+            if (!plate || hours <= 0) {
+                alert('Заполните все поля');
+                return;
+            }
+
+            if (currentObjectId) {
+                const obj = appData.objects.find(o => o.id === currentObjectId);
+                if (obj) {
+                    const entry = {
+                        id: Date.now().toString(),
+                        plate: plate,
+                        hours: hours,
+                        date: new Date().toLocaleString('ru-RU')
+                    };
+                    obj.data.cars.push(entry);
+                    saveData();
+                    document.getElementById('carPlate').value = '';
+                    document.getElementById('carHours').value = '';
+                    refreshObjectData();
+                    showMessage('Машина добавлена');
+                }
+            }
+        }
+
+        // ============ ОБНОВЛЕНИЕ ДАННЫХ ОБЪЕКТА ============
+        function refreshObjectData() {
+            if (!currentObjectId) return;
+
+            const obj = appData.objects.find(o => o.id === currentObjectId);
+            if (!obj) return;
+
+            // Люди
+            const peopleContainer = document.getElementById('peopleList');
+            peopleContainer.innerHTML = '';
+            obj.data.people.forEach((p, i) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${p.count} человек</span>
+                        <button class="delete-btn" onclick="deleteEntry('people', ${i})">🗑️</button>
+                    </div>
+                    <small>${p.date}</small>
+                `;
+                peopleContainer.appendChild(div);
+            });
+
+            // Механизмы
+            const mechanismContainer = document.getElementById('mechanismList');
+            mechanismContainer.innerHTML = '';
+            obj.data.mechanisms.forEach((m, i) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${m.name}: ${m.hours} ч.</span>
+                        <button class="delete-btn" onclick="deleteEntry('mechanisms', ${i})">🗑️</button>
+                    </div>
+                    <small>${m.date}</small>
+                `;
+                mechanismContainer.appendChild(div);
+            });
+
+            // Топливо
+            const fuelContainer = document.getElementById('fuelList');
+            fuelContainer.innerHTML = '';
+            obj.data.fuel.forEach((f, i) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${f.liters} л. топлива</span>
+                        <button class="delete-btn" onclick="deleteEntry('fuel', ${i})">🗑️</button>
+                    </div>
+                    <small>${f.date}</small>
+                `;
+                fuelContainer.appendChild(div);
+            });
+
+            // Инертные материалы
+            const materialContainer = document.getElementById('materialList');
+            materialContainer.innerHTML = '';
+            obj.data.materials.forEach((m, i) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${m.type}: ${m.quantity} ${m.unit}</span>
+                        <button class="delete-btn" onclick="deleteEntry('materials', ${i})">🗑️</button>
+                    </div>
+                    <small>${m.date}</small>
+                `;
+                materialContainer.appendChild(div);
+            });
+
+            // Наемная техника
+            const rentContainer = document.getElementById('rentEquipList');
+            rentContainer.innerHTML = '';
+            obj.data.rentEquipment.forEach((r, i) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${r.type}: ${r.hours} ч.</span>
+                        <button class="delete-btn" onclick="deleteEntry('rentEquipment', ${i})">🗑️</button>
+                    </div>
+                    <div class="list-item-desc">
+                        Организация: ${r.organization}<br>
+                        ${r.date}
+                    </div>
+                `;
+                rentContainer.appendChild(div);
+            });
+
+            // Машины
+            const carContainer = document.getElementById('carList');
+            carContainer.innerHTML = '';
+            obj.data.cars.forEach((c, i) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${c.plate}: ${c.hours} ч.</span>
+                        <button class="delete-btn" onclick="deleteEntry('cars', ${i})">🗑️</button>
+                    </div>
+                    <small>${c.date}</small>
+                `;
+                carContainer.appendChild(div);
+            });
+        }
+
+        function deleteEntry(type, index) {
+            if (!currentObjectId) return;
+
+            const obj = appData.objects.find(o => o.id === currentObjectId);
+            if (obj && obj.data[type]) {
+                obj.data[type].splice(index, 1);
+                saveData();
+                refreshObjectData();
+            }
+        }
+
+        // ============ ВКЛАДКА ЗАПИСИ ============
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'records') {
+                loadRecords();
+            } else if (tabName === 'stats') {
+                loadStats();
+            }
+        }
+
+        function loadRecords() {
+            const container = document.getElementById('recordsContainer');
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            
+            let records = [];
+            appData.objects.forEach(obj => {
+                ['people', 'mechanisms', 'fuel', 'materials', 'rentEquipment', 'cars'].forEach(type => {
+                    obj.data[type].forEach(entry => {
+                        records.push({
+                            objectName: obj.name,
+                            objectId: obj.id,
+                            type: type,
+                            ...entry
+                        });
+                    });
+                });
+            });
+
+            // Фильтр по поиску
+            if (searchInput) {
+                records = records.filter(r => {
+                    const text = JSON.stringify(r).toLowerCase();
+                    return text.includes(searchInput);
+                });
+            }
+
+            container.innerHTML = '';
+            if (records.length === 0) {
+                document.getElementById('noRecords').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('noRecords').classList.add('hidden');
+
+            records.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div class="list-item-title">
+                        <span>${getRecordTitle(r)}</span>
+                    </div>
+                    <div class="list-item-desc">
+                        <strong>${r.objectName}</strong><br>
+                        📅 ${r.date}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function getRecordTitle(record) {
+            const types = {
+                people: `👥 ${record.count} человек`,
+                mechanisms: `⚙️ ${record.name} (${record.hours}ч)`,
+                fuel: `⛽ ${record.liters}л топлива`,
+                materials: `🪨 ${record.type} (${record.quantity}${record.unit})`,
+                rentEquipment: `🚚 ${record.type} (${record.hours}ч, ${record.organization})`,
+                cars: `🚗 ${record.plate} (${record.hours}ч)`
+            };
+            return types[record.type] || 'Запись';
+        }
+
+        // ============ ВКЛАДКА СТАТИСТИКА ============
+        function loadStats() {
+            let totalObjects = appData.objects.length;
+            let totalPeople = 0;
+            let totalFuel = 0;
+            let totalRecords = 0;
+
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = '';
+
+            appData.objects.forEach(obj => {
+                totalPeople += obj.data.people.reduce((sum, p) => sum + p.count, 0);
+                totalFuel += obj.data.fuel.reduce((sum, f) => sum + f.liters, 0);
+                totalRecords += Object.values(obj.data).reduce((sum, arr) => sum + arr.length, 0);
+
+                const objStats = `
+                    <div class="list-item">
+                        <strong>${obj.name}</strong>
+                        <div class="stat-card" style="margin-top: 8px; background: white;">
+                            👥 Люди: ${obj.data.people.reduce((s, p) => s + p.count, 0)} | 
+                            ⚙️ Механизмы: ${obj.data.mechanisms.length} | 
+                            ⛽ Топливо: ${obj.data.fuel.reduce((s, f) => s + f.liters, 0).toFixed(1)}л | 
+                            🪨 Материалы: ${obj.data.materials.length}
+                        </div>
+                    </div>
+                `;
+                statsContainer.innerHTML += objStats;
+            });
+
+            document.getElementById('totalObjects').textContent = totalObjects;
+            document.getElementById('totalRecords').textContent = totalRecords;
+            document.getElementById('totalPeople').textContent = totalPeople;
+            document.getElementById('totalFuel').textContent = totalFuel.toFixed(1);
+        }
+
+        // ============ ЭКСПОРТ В EXCEL ============
+        function exportToExcel() {
+            // Создаем CSV формат (совместимый с Excel)
+            let csv = 'Объект,Тип,Данные,Дата\n';
+
+            appData.objects.forEach(obj => {
+                obj.data.people.forEach(p => {
+                    csv += `"${obj.name}","Люди","${p.count} человек","${p.date}"\n`;
+                });
+                obj.data.mechanisms.forEach(m => {
+                    csv += `"${obj.name}","Механизм","${m.name} - ${m.hours}ч","${m.date}"\n`;
+                });
+                obj.data.fuel.forEach(f => {
+                    csv += `"${obj.name}","Топливо","${f.liters}л","${f.date}"\n`;
+                });
+                obj.data.materials.forEach(m => {
+                    csv += `"${obj.name}","Материал","${m.type} - ${m.quantity}${m.unit}","${m.date}"\n`;
+                });
+                obj.data.rentEquipment.forEach(r => {
+                    csv += `"${obj.name}","Наемная техника","${r.type} - ${r.hours}ч (${r.organization})","${r.date}"\n`;
+                });
+                obj.data.cars.forEach(c => {
+                    csv += `"${obj.name}","Машина","${c.plate} - ${c.hours}ч","${c.date}"\n`;
+                });
+            });
+
+            // Создаем файл
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `export_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showMessage('Данные экспортированы в CSV файл', 'success');
+        }
+
+        function downloadJSON() {
+            const json = JSON.stringify(appData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `backup_${new Date().toISOString().split('T')[0]}.json`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showMessage('Резервная копия скачана', 'success');
+        }
+
+        function showClearDataModal() {
+            document.getElementById('clearDataModal').classList.add('active');
+        }
+
+        function clearAllData() {
+            appData.objects = [];
+            saveData();
+            closeModal('clearDataModal');
+            loadObjects();
+            showMessage('Все данные удалены', 'success');
+        }
+
+        // ============ МОДАЛЬНЫЕ ОКНА ============
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        };
+
+        // ============ ХРАНИЛИЩЕ ============
+        function saveData() {
+            localStorage.setItem('appData', JSON.stringify(appData));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('appData');
+            if (saved) {
+                appData = JSON.parse(saved);
+            }
+        }
+
+        // ============ UI ПОМОЩНИКИ ============
+        function showMessage(msg, type = 'info') {
+            const msg_div = document.createElement('div');
+            msg_div.className = type === 'success' ? 'success-message' : 'error-message';
+            msg_div.textContent = msg;
+            msg_div.style.position = 'fixed';
+            msg_div.style.top = '10px';
+            msg_div.style.left = '10px';
+            msg_div.style.right = '10px';
+            msg_div.style.zIndex = '2000';
+            document.body.appendChild(msg_div);
+
+            setTimeout(() => {
+                msg_div.remove();
+            }, 3000);
+        }
+
+        function toggleObjectList() {
+            const list = document.getElementById('objectsList');
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        }
+
+        document.getElementById('searchInput').addEventListener('input', loadRecords);
+    </script>
+</body>
+</html>
